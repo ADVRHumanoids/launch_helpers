@@ -1,8 +1,8 @@
-"""Launch helpers shared by lio_mapping's and kyon_navigation's launch files (not a launch file):
-one process per tmux window, `ros2 run` command lines, params files, temp files.
+"""Helpers for ROS 2 launch files (not a launch file): one process per tmux window, `ros2 run`
+command lines, params files, temp files and launch arguments.
 
-Each package installs this file into its share/<package>/launch (a git submodule, not a ROS
-package: one package.xml in two repos would be a duplicate package):
+Each package that uses it installs this file into its share/<package>/launch (a git submodule, not
+a ROS package: one package.xml vendored into several repositories would be a duplicate package):
 
     sys.path.insert(0, os.path.join(get_package_share_directory("<package>"), "launch"))
     from launch_helpers import launch_windows, ros2_run, temp_file  # noqa: E402
@@ -99,28 +99,6 @@ def ros2_run(
     for a, b in remaps:
         cmd += ["-r", f"{a}:={b}"]
     return shlex.join(cmd)
-
-
-def centre_view_on_map(view, map_dir):
-    """Points an RViz Orbit view at the middle of a saved map or session (its keyframes)."""
-    poses = os.path.join(map_dir, "poses.csv")
-    if not os.path.isfile(poses):
-        poses = os.path.join(map_dir, "odom_poses.csv")  # a session
-    try:
-        with open(poses) as f:
-            xyz = [
-                [float(v) for v in line.split(",")[2:5]]
-                for line in f
-                if line.strip() and not line.startswith("#")
-            ]
-    except (OSError, ValueError):
-        return
-    if not xyz:
-        return
-    lo = [min(p[k] for p in xyz) for k in range(3)]
-    hi = [max(p[k] for p in xyz) for k in range(3)]
-    view["Focal Point"] = {k: (lo[i] + hi[i]) / 2.0 for i, k in enumerate("XYZ")}
-    view["Distance"] = max(50.0, 1.2 * max(hi[0] - lo[0], hi[1] - lo[1]))
 
 
 def _tmux_session(name: str, append: bool) -> bool:
